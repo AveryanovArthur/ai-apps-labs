@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Погода</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
+    form { display: flex; gap: .5rem; margin: 1.5rem 0; }
+    input { flex: 1; padding: .5rem; font-size: 1rem; }
+    button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; }
+    #result { min-height: 3rem; white-space: pre-wrap; line-height: 1.5; }
+    .error { color: #b00020; }
+    .weather-card { background: #f0f4f8; border-radius: 8px; padding: 1rem; }
+    .weather-card p { margin: 0.4rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Погода</h1>
+
+  <form id="weather-form">
+    <input id="city" name="city" placeholder="Назва міста" autocomplete="off" required>
+    <button type="submit">Показати</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('weather-form');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const city = document.getElementById('city').value.trim();
+      result.className = '';
+      result.textContent = 'Запит…';
+
+      try {
+        const response = await fetch('/api/weather?city=' + encodeURIComponent(city));
+        const data = await response.json();
+
+        if (!response.ok) {
+          result.className = 'error';
+          result.textContent = 'Помилка: ' + (data.detail || JSON.stringify(data));
+          return;
+        }
+
+        const location = data.country ? `${data.city}, ${data.country}` : data.city;
+        result.innerHTML = `
+          <div class="weather-card">
+            <h3>${location}</h3>
+            <p><strong>Температура:</strong> ${data.temperature} ${data.temperature_unit}</p>
+            <p><strong>Швидкість вітру:</strong> ${data.wind_speed} ${data.wind_speed_unit}</p>
+          </div>
+        `;
+      } catch (error) {
+        result.className = 'error';
+        result.textContent = 'Не вдалося звернутися до сервера.';
+      }
+    });
+  </script>
+</body>
+</html>
