@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Детекція обʼєктів</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 3rem auto; padding: 0 1rem; }
+    form { display: flex; gap: .5rem; align-items: center; margin: 1.5rem 0; flex-wrap: wrap; }
+    button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; }
+    #result { min-height: 3rem; white-space: pre-wrap; line-height: 1.5; }
+    .error { color: #b00020; }
+    canvas { max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Детекція обʼєктів</h1>
+
+  <form id="detect-form">
+    <input id="image" type="file" name="image" accept="image/*" required>
+    <label for="confidence">Поріг (0-1):</label>
+    <input id="confidence" type="number" name="confidence" step="0.01" min="0.01" max="1.0" value="0.25" style="width: 4rem;">
+    <button type="submit">Знайти обʼєкти</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('detect-form');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const file = document.getElementById('image').files[0];
+      const conf = document.getElementById('confidence').value;
+      if (!file) return;
+
+      const data = new FormData();
+      data.append('image', file);
+      data.append('confidence', conf);
+
+      result.className = '';
+      result.innerHTML = 'Обробка…';
+
+      try {
+        const response = await fetch('/api/detect', { method: 'POST', body: data });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          result.className = 'error';
+          result.textContent = 'Помилка: ' + (payload.detail || JSON.stringify(payload));
+          return;
+        }
+
+        let html = `<p><strong>Знайдено обʼєктів:</strong> ${payload.count} | <strong>Час:</strong> ${payload.time_seconds} с</p>`;
+        result.innerHTML = html;
+
+        const imgUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = imgUrl;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.drawImage(img, 0, 0);
+          ctx.lineWidth = 3;
+          ctx.textBaseline = "top";
+
+          payload.objects.forEach(obj => {
+            const [x1, y1, x2, y2] = obj.box;
+            const width = x2 - x1;
+            const height = y2 - y1;
+
+            ctx.strokeStyle = "#00ff00";
+            ctx.strokeRect(x1, y1, width, height);
+
+            const text = `${obj.class} ${(obj.confidence * 100).toFixed(0)}%`;
+            ctx.font = "18px Arial";
+            const textWidth = ctx.measureText(text).width;
+            
+            ctx.fillStyle = "#00ff00";
+            ctx.fillRect(x1, y1 - 22, textWidth + 6, 22);
+            
+            ctx.fillStyle = "#000000";
+            ctx.fillText(text, x1 + 3, y1 - 20);
+          });
+
+          result.appendChild(canvas);
+        };
+
+      } catch (error) {
+        result.className = 'error';
+        result.textContent = 'Не вдалося звернутися до сервера.';
+      }
+    });
+  </script>
+</body>
+</html>
