@@ -13,6 +13,10 @@ __pycache__/
 .env
 .env.local
 *.local.json
+.venv/
+__pycache__/
+*.pyc
+index/
 
 # Ваги моделей — завантажуються автоматично, у репозиторії не потрібні
 *.pt
@@ -21,6 +25,20 @@ __pycache__/
 pr2/eval/images/
 pr2/eval/expected.json
 
+# Власний набір звернень і висновки (ПР3, ПР4)
+pr3/compare/requests.json
+pr3/compare/findings.md
+pr4/compare/requests.json
+pr4/compare/findings.md
+pr5/index/
+pr5/compare/queries.json
+pr5/compare/findings.md
+pr6/index/
+pr6/eval/questions.json
+pr6/eval/findings.md
+eval/results-*.json
+pr6/data/index.pkl
+pr6/eval/results-*.json
 # Редактори та ОС
 .vscode/
 .idea/
